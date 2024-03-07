@@ -21,16 +21,24 @@ import com.google.firebase.database.ValueEventListener;
 
 public class pinEntryGallery extends AppCompatActivity {
 
+    private static final String TAG = "pinEntryGallery";
+
     TextInputEditText etPinEntry;
     Button btnSubmit;
     FirebaseAuth mAuth;
 
     Bitmap blurredImageBitmap;
+    Bitmap unblurredBitmap; // Add this variable to store the unblurred bitmap
+
+    // Add this at the beginning of your pinEntryGallery activity
+    private BitmapPreferenceManager preferenceManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pin_entry);
+
+        preferenceManager = new BitmapPreferenceManager(this);
 
         etPinEntry = findViewById(R.id.pinEntry);
         btnSubmit = findViewById(R.id.btnSubmit);
@@ -40,41 +48,37 @@ public class pinEntryGallery extends AppCompatActivity {
         byte[] byteArray = getIntent().getByteArrayExtra("IMAGE_BITMAP");
         blurredImageBitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
 
+        // Retrieve the unblurred bitmap using your existing logic
+        unblurredBitmap = getIntent().getParcelableExtra("UNBLURRED_IMAGE_BITMAP");
 
-        Log.d("pinEntryGallery", "Byte array length: " + (byteArray != null ? byteArray.length : 0));
-
-        if (byteArray != null) {
-            blurredImageBitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
-
-            if (blurredImageBitmap != null) {
-                Log.d("pinEntryGallery", "Bitmap dimensions: " + blurredImageBitmap.getWidth() + " x " + blurredImageBitmap.getHeight());
-            } else {
-                Log.e("pinEntryGallery", "Bitmap is null after decoding");
-            }
+        if (unblurredBitmap != null) {
+            Log.d(TAG, "Unblurred Bitmap dimensions: " + unblurredBitmap.getWidth() + " x " + unblurredBitmap.getHeight());
         } else {
-            Log.e("pinEntryGallery", "Byte array is null");
+            Log.e(TAG, "Unblurred Bitmap is null");
         }
 
-
-
-
+        // Move the log statements here after unblurredBitmap has been assigned a value
+        Log.d(TAG, "Blurred Bitmap dimensions: " + blurredImageBitmap.getWidth() + " x " + blurredImageBitmap.getHeight());
+        if (unblurredBitmap != null) {
+            Log.d(TAG, "Unblurred Bitmap dimensions: " + unblurredBitmap.getWidth() + " x " + unblurredBitmap.getHeight());
+        } else {
+            Log.e(TAG, "Unblurred Bitmap is null");
+        }
 
         btnSubmit.setOnClickListener(view -> {
-            verifyPin(blurredImageBitmap);
+            verifyPin(blurredImageBitmap, unblurredBitmap);
         });
-
-
     }
 
-    private void verifyPin(Bitmap blurredImageBitmap) {
+    private void verifyPin(Bitmap blurredImageBitmap, Bitmap unblurredBitmap) {
         String enteredPin = etPinEntry.getText().toString();
 
         // Retrieve the user's PIN from Firebase or your chosen storage
-        getSavedPinFromFirebase(enteredPin);
+        getSavedPinFromFirebase(enteredPin, blurredImageBitmap, unblurredBitmap);
     }
 
-    // Retrieve the user's PIN from Firebase Realtime Database
-    private void getSavedPinFromFirebase(String enteredPin) {
+    // Modify the method to accept the unblurred bitmap
+    private void getSavedPinFromFirebase(String enteredPin, Bitmap blurredImageBitmap, Bitmap unblurredBitmap) {
         // Get the current user
         FirebaseAuth auth = FirebaseAuth.getInstance();
         String userId = auth.getCurrentUser().getUid();
@@ -91,21 +95,25 @@ public class pinEntryGallery extends AppCompatActivity {
 
                     // Compare the entered PIN with the saved PIN
                     if (!TextUtils.isEmpty(savedPin) && enteredPin.equals(savedPin)) {
-                        // PIN is correct, proceed to the desired activity (e.g., MainActivity)
+                        // PIN is correct, proceed to the desired activity (e.g., ImageDetail)
+                        if (blurredImageBitmap != null && unblurredBitmap != null) {
+                            // Save the unblurred bitmap to SharedPreferences
+                            preferenceManager.saveUnblurredBitmap(unblurredBitmap);
 
-                        if (blurredImageBitmap != null) {
+                            // Proceed to the ImageDetail activity
                             Intent imageDetailIntent = new Intent(pinEntryGallery.this, ImageDetail.class);
+
+                            // Pass bitmaps using intent extras
                             imageDetailIntent.putExtra("BLURRED_IMAGE_BITMAP", blurredImageBitmap);
+                            imageDetailIntent.putExtra("UNBLURRED_IMAGE_BITMAP", unblurredBitmap);
+
                             startActivity(imageDetailIntent);
-                            finish();
+                            finish(); // Close the current activity
                         } else {
-                            Log.e("pinEntryGallery", "Blurred Image Bitmap is null");
+                            Log.e(TAG, "Blurred or Unblurred Image Bitmap is null");
                             Toast.makeText(pinEntryGallery.this, "Null Bitmap", Toast.LENGTH_SHORT).show();
-                            // Handle the case where the blurred image bitmap is null
+                            // Handle the case where the blurred or unblurred image bitmap is null
                         }
-
-
-
                     } else {
                         Toast.makeText(pinEntryGallery.this, "Incorrect PIN", Toast.LENGTH_SHORT).show();
                         // You might want to implement logic for handling incorrect PIN attempts

@@ -22,68 +22,58 @@ public class ImageDetail extends AppCompatActivity {
 
         imageViewDetail = findViewById(R.id.imageViewDetail);
 
-        // Retrieve the blurred image item from the intent
-        MainActivity.BlurredImage blurredImageItem = getIntent().getParcelableExtra("BLURRED_IMAGE_ITEM");
+        // Retrieve the blurred and unblurred bitmaps from the intent
+        Bitmap blurredImageBitmap = getIntent().getParcelableExtra("BLURRED_IMAGE_BITMAP");
+        Bitmap unblurredImageBitmap = getIntent().getParcelableExtra("UNBLURRED_IMAGE_BITMAP");
 
-        // Log the received blurred image item
-        Log.d(TAG, "Received BlurredImageItem: " + blurredImageItem);
+        // Log the received bitmaps
+        Log.d(TAG, "Received Blurred Image Bitmap: " + blurredImageBitmap);
+        Log.d(TAG, "Received Unblurred Image Bitmap: " + unblurredImageBitmap);
 
         // Log the lifecycle event
         Log.d(TAG, "onCreate: ImageDetail");
 
-        if (blurredImageItem != null) {
-            Log.d(TAG, "Received BlurredImage: " + blurredImageItem.toString());
+        if (blurredImageBitmap != null && unblurredImageBitmap != null) {
+            Log.d(TAG, "Blurred Bitmap dimensions: " + blurredImageBitmap.getWidth() + " x " + blurredImageBitmap.getHeight());
 
-            Bitmap blurredImageBitmap = blurredImageItem.getBlurredBitmap();
-            if (blurredImageBitmap != null) {
-                Log.d(TAG, "Blurred Bitmap dimensions: " + blurredImageBitmap.getWidth() + " x " + blurredImageBitmap.getHeight());
+            imageViewDetail.setImageBitmap(blurredImageBitmap);
 
-                imageViewDetail.setImageBitmap(blurredImageBitmap);
+            // Long-press to toggle between blurred and unblurred
+            imageViewDetail.setOnLongClickListener(v -> {
+                if (isBlurred) {
+                    // Unblur the image
+                    imageViewDetail.setImageBitmap(unblurredImageBitmap);
+                    isBlurred = false;
+                    Toast.makeText(ImageDetail.this, "Image Unblurred", Toast.LENGTH_SHORT).show();
+                } else {
+                    // Blur the image again
+                    imageViewDetail.setImageBitmap(blurredImageBitmap);
+                    isBlurred = true;
+                    Toast.makeText(ImageDetail.this, "Image Blurred", Toast.LENGTH_SHORT).show();
+                }
+                return true; // Consume the long click event
+            });
 
-                // Long-press to toggle between blurred and unblurred
-                imageViewDetail.setOnLongClickListener(v -> {
-                    if (isBlurred) {
-                        // Unblur the image
-                        imageViewDetail.setImageBitmap(blurredImageItem.getUnblurredBitmap());
-                        isBlurred = false;
-                        Toast.makeText(ImageDetail.this, "Image Unblurred", Toast.LENGTH_SHORT).show();
-                    } else {
-                        // Blur the image again
-                        imageViewDetail.setImageBitmap(blurredImageBitmap);
-                        isBlurred = true;
-                        Toast.makeText(ImageDetail.this, "Image Blurred", Toast.LENGTH_SHORT).show();
-                    }
-                    return true; // Consume the long click event
-                });
+            // Set up onTouchListener to detect release
+            imageViewDetail.setOnTouchListener((v, event) -> {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    // Handle release event here (e.g., reset to default state)
+                    // In this example, revert to blurred image
+                    imageViewDetail.setImageBitmap(blurredImageBitmap);
+                    isBlurred = true;
+                    Toast.makeText(ImageDetail.this, "Image Returned to Blurred State", Toast.LENGTH_SHORT).show();
+                    return true; // Consume the touch event
+                }
+                return false;
+            });
 
-                // Set up onTouchListener to detect release
-                imageViewDetail.setOnTouchListener((v, event) -> {
-                    if (event.getAction() == MotionEvent.ACTION_UP) {
-                        // Handle release event here (e.g., reset to default state)
-                        // In this example, revert to blurred image
-                        imageViewDetail.setImageBitmap(blurredImageBitmap);
-                        isBlurred = true;
-                        Toast.makeText(ImageDetail.this, "Image Returned to Blurred State", Toast.LENGTH_SHORT).show();
-                        return true; // Consume the touch event
-                    }
-                    return false;
-                });
-
-                // Close button
-                findViewById(R.id.btnClose).setOnClickListener(v -> finish());
-            } else {
-                Log.e(TAG, "Blurred Bitmap is null at Image Detail");
-                Toast.makeText(this, "Blurred Bitmap is null at Image Detail", Toast.LENGTH_SHORT).show();
-                // Handle the case where the blurred image bitmap is null
-                // You might want to add additional handling or notify the user
-                finish(); // Finish the activity if the bitmap is null
-            }
+            // Close button
+            findViewById(R.id.btnClose).setOnClickListener(v -> finish());
         } else {
-            Log.e(TAG, "BlurredImage item is null at Image Detail");
-            Toast.makeText(this, "BlurredImage item is null at Image Detail", Toast.LENGTH_SHORT).show();
-            // Handle the case where the blurred image item is null
-            // You might want to add additional handling or notify the user
-            finish(); // Finish the activity if the blurred image item is null
+            Log.e(TAG, "Blurred or Unblurred Bitmap is null at Image Detail");
+            Toast.makeText(this, "Blurred or Unblurred Bitmap is null at Image Detail", Toast.LENGTH_SHORT).show();
+            // Handle the case where the blurred or unblurred image bitmap is null
+            finish(); // Finish the activity if the bitmap is null
         }
     }
 }

@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class galleryActivity extends AppCompatActivity {
@@ -19,8 +20,14 @@ public class galleryActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_gallery);
 
+        // Retrieve the list of BlurredImage objects from the intent
+        ArrayList<MainActivity.BlurredImage> blurredImageList = getIntent().getParcelableArrayListExtra("BLURRED_IMAGE_LIST");
+
+        // Pass the list to the adapter
+        galleryAdapter galleryAdapter = new galleryAdapter(this, blurredImageList);
+
         recyclerView = findViewById(R.id.recyclerView);
-        galleryAdapter = new galleryAdapter(getBlurredImages());
+        galleryAdapter = new galleryAdapter(this, getBlurredImages());
         recyclerView.setAdapter(galleryAdapter);
         // Set the GridLayoutManager
         int spanCount = 3; // You can adjust the span count as needed

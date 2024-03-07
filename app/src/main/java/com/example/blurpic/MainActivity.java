@@ -80,8 +80,16 @@ public class MainActivity extends AppCompatActivity {
         blurImageButton.setOnClickListener(view -> blurImage(imageView, unblurredBitmap));
     }
 
+    // In MainActivity.java
     private void openGallery() {
         Intent galleryIntent = new Intent(MainActivity.this, galleryActivity.class);
+
+        // Create an ArrayList to hold BlurredImage objects
+        ArrayList<BlurredImage> blurredImageArrayList = new ArrayList<>(blurredImageList);
+
+        // Pass the list to GalleryActivity
+        galleryIntent.putParcelableArrayListExtra("BLURRED_IMAGE_LIST", blurredImageArrayList);
+
         startActivity(galleryIntent);
     }
 
@@ -211,12 +219,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
-
-// Modify this method to pass the Parcelable BlurredImage item correctly
 // New method to open ImageDetail activity
 private void openImageDetail(BlurredImage blurredImageItem) {
-    Intent imageDetailIntent = new Intent(MainActivity.this, ImageDetail.class);
+    Intent imageDetailIntent = new Intent(MainActivity.this, galleryActivity.class);
 
     // Pass the BlurredImage item using Parcelable
     imageDetailIntent.putExtra("BLURRED_IMAGE_ITEM", blurredImageItem);
