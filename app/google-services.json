@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "959023419302",
+    "project_id": "auth-e9528",
+    "storage_bucket": "auth-e9528.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:959023419302:android:5c93c3f48f5b5c6e424967",
+        "android_client_info": {
+          "package_name": "com.example.blurpic"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCB9jO5_3DhprPGwthzzkAHooJHrNjyTPc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
