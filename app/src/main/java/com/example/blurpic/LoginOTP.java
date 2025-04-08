@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -40,6 +41,7 @@ public class LoginOTP extends AppCompatActivity {
     TextView resendOtpTextView;
     FirebaseAuth mAuth = FirebaseAuth.getInstance();
 
+
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,23 +57,26 @@ public class LoginOTP extends AppCompatActivity {
 
         sendOtp(phoneNumber,false);
 
-        Intent resultIntent = new Intent();
-        resultIntent.putExtra("verified", true);
-        setResult(Activity.RESULT_OK, resultIntent);
-        finish();
+        String phone = getSharedPreferences("userPrefs", MODE_PRIVATE).getString("userPhone", "+254711188899");
+
+        SharedPreferences.Editor editor = getSharedPreferences("userPrefs", MODE_PRIVATE).edit();
+        editor.putString("phone", phone);
+        editor.apply();
 
 
         nextBtn.setOnClickListener(v -> {
-            String enteredOtp  = otpInput.getText().toString();
-            PhoneAuthCredential credential =  PhoneAuthProvider.getCredential(verificationCode,enteredOtp);
+            String enteredOtp = otpInput.getText().toString();
+            PhoneAuthCredential credential = PhoneAuthProvider.getCredential(verificationCode, enteredOtp);
             signIn(credential);
         });
+
 
         resendOtpTextView.setOnClickListener((v)->{
             sendOtp(phoneNumber,true);
         });
 
     }
+
 
     void sendOtp(String phoneNumber,boolean isResend){
 //        startResendTimer();

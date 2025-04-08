@@ -176,7 +176,33 @@ public class MainActivity extends AppCompatActivity {
         } else {
             Toast.makeText(this, "No original image loaded", Toast.LENGTH_SHORT).show();
         }
+
+
+        // Launch OTP verification activity before resetting
+        Intent intent = new Intent(MainActivity.this, LoginOTP.class);
+        intent.putExtra("phone", "+254711188899"); // Replace with actual stored number
+        startActivityForResult(intent, 101); // 101 = request code
     }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == 200 && resultCode == Activity.RESULT_OK) {
+            boolean verified = data != null && data.getBooleanExtra("verified", false);
+            if (verified) {
+                // Perform the actual reset after verification
+                imageView.setImageBitmap(originalBitmap);
+                blurredBitmap = null;
+                blurSlider.setProgress(0);
+                Toast.makeText(this, "Image reset to original", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "OTP verification failed", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
 
 
 
