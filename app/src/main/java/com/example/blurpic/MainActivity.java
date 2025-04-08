@@ -57,10 +57,16 @@ public class MainActivity extends AppCompatActivity {
 
         SharedPreferences preferences = getSharedPreferences("userPrefs", MODE_PRIVATE);
         boolean isLoggedIn = preferences.getBoolean("isLoggedIn", false);
+        String pin = preferences.getString("userPin", null);
 
         if (!isLoggedIn) {
             startActivity(new Intent(this, LoginActivity.class));
             finish();
+        }
+
+        // Prompt to set PIN if not already set
+        if (pin == null) {
+            promptSetPin();
         }
 
 
@@ -133,6 +139,30 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    private void promptSetPin() {
+        final android.widget.EditText input = new android.widget.EditText(this);
+        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+        input.setHint("Enter a 4-digit PIN");
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Set PIN")
+                .setMessage("Please set a 4-digit PIN for saving images.")
+                .setView(input)
+                .setCancelable(false)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String pin = input.getText().toString();
+                    if (pin.length() == 4) {
+                        SharedPreferences.Editor editor = getSharedPreferences("userPrefs", MODE_PRIVATE).edit();
+                        editor.putString("userPin", pin);
+                        editor.apply();
+                        Toast.makeText(this, "PIN set successfully!", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "Please enter a valid 4-digit PIN.", Toast.LENGTH_SHORT).show();
+                        promptSetPin();
+                    }
+                })
+                .show();
+    }
 
     private void resetToOriginalImage() {
         if (originalBitmap != null) {
@@ -217,6 +247,35 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void saveImageToDevice() {
+        SharedPreferences preferences = getSharedPreferences("userPrefs", MODE_PRIVATE);
+        String savedPin = preferences.getString("userPin", null);
+
+        if (savedPin == null) {
+            Toast.makeText(this, "PIN not set. Cannot save image.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        final android.widget.EditText input = new android.widget.EditText(this);
+        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+        input.setHint("Enter your 4-digit PIN");
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Enter PIN")
+                .setMessage("Please enter your PIN to save the image.")
+                .setView(input)
+                .setPositiveButton("OK", (dialog, which) -> {
+                    String enteredPin = input.getText().toString();
+                    if (enteredPin.equals(savedPin)) {
+                        performSaveImage(); // only save if PIN matches
+                    } else {
+                        Toast.makeText(this, "Incorrect PIN", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void performSaveImage() {
         if (blurredBitmap != null) {
             try {
                 File directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
@@ -238,5 +297,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "No blurred image available to save", Toast.LENGTH_SHORT).show();
         }
     }
+
+
 
 }
