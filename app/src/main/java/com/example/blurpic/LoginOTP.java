@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -53,6 +54,12 @@ public class LoginOTP extends AppCompatActivity {
         phoneNumber = getIntent().getExtras().getString("phone");
 
         sendOtp(phoneNumber,false);
+
+        Intent resultIntent = new Intent();
+        resultIntent.putExtra("verified", true);
+        setResult(Activity.RESULT_OK, resultIntent);
+        finish();
+
 
         nextBtn.setOnClickListener(v -> {
             String enteredOtp  = otpInput.getText().toString();

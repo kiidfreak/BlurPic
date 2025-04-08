@@ -110,6 +110,7 @@ public class MainActivity extends AppCompatActivity {
 
         int id = item.getItemId();
 
+
         if (id == R.id.action_save) {
             saveImageToDevice();
             return true;
@@ -165,6 +166,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void resetToOriginalImage() {
+
+
         if (originalBitmap != null) {
             imageView.setImageBitmap(originalBitmap);
             blurredBitmap = null;
