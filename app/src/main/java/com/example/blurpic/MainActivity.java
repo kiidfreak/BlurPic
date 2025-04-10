@@ -21,14 +21,19 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.provider.MediaStore;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.appcompat.widget.Toolbar;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.MultiTransformation;
 import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
+import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 
@@ -50,6 +55,8 @@ public class MainActivity extends AppCompatActivity {
     private Bitmap originalBitmap;
     private int blurLevel = 10;
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,8 +77,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-
-        camera = findViewById(R.id.button);
+        ImageButton camera = findViewById(R.id.button);
         gallery = findViewById(R.id.button2);
         imageView = findViewById(R.id.imageView);
         blurSlider = findViewById(R.id.blurSlider);
@@ -166,18 +172,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void resetToOriginalImage() {
-
-
-        if (originalBitmap != null) {
-            imageView.setImageBitmap(originalBitmap);
-            blurredBitmap = null;
-            blurSlider.setProgress(0);  // Reset blur level
-            Toast.makeText(this, "Image reset to original", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "No original image loaded", Toast.LENGTH_SHORT).show();
-        }
-
-
         // Launch OTP verification activity before resetting
         Intent intent = new Intent(MainActivity.this, LoginOTP.class);
         intent.putExtra("phone", "+254711188899"); // Replace with actual stored number
@@ -189,21 +183,41 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == 200 && resultCode == Activity.RESULT_OK) {
+        if (requestCode == 101 && resultCode == RESULT_OK) {
             boolean verified = data != null && data.getBooleanExtra("verified", false);
+
             if (verified) {
-                // Perform the actual reset after verification
-                imageView.setImageBitmap(originalBitmap);
-                blurredBitmap = null;
-                blurSlider.setProgress(0);
-                Toast.makeText(this, "Image reset to original", Toast.LENGTH_SHORT).show();
+                // If OTP is verified, reset the image
+                if (originalBitmap != null) {
+                    imageView.setImageBitmap(originalBitmap);
+                    blurredBitmap = null;
+                    blurSlider.setProgress(0);  // Reset blur level
+                    Toast.makeText(this, "Image reset to original", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "No original image loaded", Toast.LENGTH_SHORT).show();
+                }
             } else {
                 Toast.makeText(this, "OTP verification failed", Toast.LENGTH_SHORT).show();
+                showResendOtpDialog();  // Show retry option if OTP fails
             }
         }
     }
 
+    private void showResendOtpDialog() {
+        new android.app.AlertDialog.Builder(MainActivity.this)
+                .setTitle("OTP Verification Failed")
+                .setMessage("Would you like to resend the OTP?")
+                .setPositiveButton("Resend OTP", (dialog, which) -> resendOtp())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
 
+    private void resendOtp() {
+        // Launch OTP verification activity again
+        Intent intent = new Intent(MainActivity.this, LoginOTP.class);
+        intent.putExtra("phone", "+254711188899"); // Replace with actual stored number
+        startActivityForResult(intent, 101); // 101 = request code
+    }
 
 
     private void requestCameraPermission() {
@@ -250,9 +264,17 @@ public class MainActivity extends AppCompatActivity {
                                     imageView.setImageBitmap(resource);
                                     applyBlur(imageView, originalBitmap, blurLevel);
                                 }
+
+
                                 @Override
                                 public void onLoadCleared(@Nullable Drawable placeholder) {}
                             });
+                    ImageView imageView = findViewById(R.id.imageView);
+                    Glide.with(this)
+                            .load(R.mipmap.ic_launcher)  // Your image source
+                            .apply(RequestOptions.bitmapTransform(new RoundedCorners(50)))  // 50 is the radius for rounding
+                            .into(imageView);
+
                 }
             }
     );

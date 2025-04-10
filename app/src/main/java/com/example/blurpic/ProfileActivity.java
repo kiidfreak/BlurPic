@@ -1,34 +1,38 @@
 package com.example.blurpic;
 
 import android.app.DatePickerDialog;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.Calendar;
 
 public class ProfileActivity extends AppCompatActivity {
 
-    private TextView tvDateOfBirth, tvAge;
-    private Button btnChangeDob;
+    private TextView tvDateOfBirth, tvAge, tvName;
+    private EditText etName;
+    private Button btnChangeDob, btnSaveName;
     private SharedPreferences sharedPreferences;
-
-    private static final int REQUEST_CODE_OTP = 101; // Unique request code for OTP result
+    private FirebaseDatabase firebaseDatabase;
+    private DatabaseReference userRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-        // Set up Toolbar with back button
+        // Set up Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar_profile);
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("My Profile");
@@ -37,45 +41,50 @@ public class ProfileActivity extends AppCompatActivity {
         // Initialize views
         tvDateOfBirth = findViewById(R.id.tvDateOfBirth);
         tvAge = findViewById(R.id.tvAge);
+        tvName = findViewById(R.id.tvName);
+        etName = findViewById(R.id.etName);
         btnChangeDob = findViewById(R.id.btnChangeDob);
+        btnSaveName = findViewById(R.id.btnSaveName); // Button for saving name
 
         sharedPreferences = getSharedPreferences("userPrefs", MODE_PRIVATE);
+        firebaseDatabase = FirebaseDatabase.getInstance();
+        userRef = firebaseDatabase.getReference("users").child(FirebaseAuth.getInstance().getCurrentUser().getUid());
 
         // Load saved data
         loadProfileData();
 
-        // Set up change DOB button listener to start OTP flow first
-        btnChangeDob.setOnClickListener(v -> startOtpVerification());
+        // Set up change DOB button listener
+        btnChangeDob.setOnClickListener(v -> openDatePicker());
+
+        // Set up save name button listener
+        btnSaveName.setOnClickListener(v -> saveName());
     }
 
-    private void startOtpVerification() {
-        String savedPhone = sharedPreferences.getString("phone", "");
-        if (savedPhone.isEmpty()) {
-            Toast.makeText(this, "Phone number not set. Please log in again.", Toast.LENGTH_SHORT).show();
-            return;
-        }
+    private void openDatePicker() {
+        Calendar calendar = Calendar.getInstance();
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH);
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
 
-        Intent intent = new Intent(ProfileActivity.this, LoginOTP.class);
-        intent.putExtra("phone", savedPhone);
-        intent.putExtra("purpose", "deblur"); // Just a tag to reuse OTP logic
-        startActivityForResult(intent, REQUEST_CODE_OTP);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == REQUEST_CODE_OTP && resultCode == RESULT_OK) {
-            boolean verified = data != null && data.getBooleanExtra("verified", false);
-            if (verified) {
-                openDatePicker(); // Proceed only after OTP
-            } else {
-                Toast.makeText(this, "Verification failed", Toast.LENGTH_SHORT).show();
-            }
-        }
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+                ProfileActivity.this,
+                (view, selectedYear, selectedMonth, selectedDay) -> {
+                    String newDob = selectedYear + "-" + (selectedMonth + 1) + "-" + selectedDay;
+                    tvDateOfBirth.setText(newDob);
+                    saveProfileData(newDob); // Save date of birth
+                    calculateAndDisplayAge(newDob); // Update age
+                },
+                year, month, day
+        );
+        datePickerDialog.show();
     }
 
     private void loadProfileData() {
+        String savedName = sharedPreferences.getString("name", "");
+        if (!savedName.isEmpty()) {
+            etName.setText(savedName); // Display name in the EditText
+        }
+
         String savedDob = sharedPreferences.getString("dateOfBirth", "");
         if (!savedDob.isEmpty()) {
             tvDateOfBirth.setText(savedDob);
@@ -102,31 +111,39 @@ public class ProfileActivity extends AppCompatActivity {
         tvAge.setText("Age: " + age);
     }
 
-    private void openDatePicker() {
-        Calendar calendar = Calendar.getInstance();
-        int year = calendar.get(Calendar.YEAR);
-        int month = calendar.get(Calendar.MONTH);
-        int day = calendar.get(Calendar.DAY_OF_MONTH);
+    private void saveProfileData(String newDob) {
+        String name = etName.getText().toString().trim();
 
-        DatePickerDialog datePickerDialog = new DatePickerDialog(
-                ProfileActivity.this,
-                (view, selectedYear, selectedMonth, selectedDay) -> {
-                    String newDob = selectedYear + "-" + (selectedMonth + 1) + "-" + selectedDay;
-                    tvDateOfBirth.setText(newDob);
-                    saveProfileData(newDob);
-                    calculateAndDisplayAge(newDob);
-                },
-                year, month, day
-        );
-        datePickerDialog.show();
+        if (!name.isEmpty()) {
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putString("name", name);
+            editor.putString("dateOfBirth", newDob);
+            editor.apply();
+
+            // Save to Firebase
+            userRef.child("name").setValue(name);
+            userRef.child("dateOfBirth").setValue(newDob);
+
+            Toast.makeText(this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Name cannot be empty", Toast.LENGTH_SHORT).show();
+        }
     }
 
-    private void saveProfileData(String newDob) {
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putString("dateOfBirth", newDob);
-        editor.apply();
+    private void saveName() {
+        String name = etName.getText().toString().trim();
+        if (!name.isEmpty()) {
+            // Save to shared preferences and Firebase
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putString("name", name);
+            editor.apply();
 
-        Toast.makeText(this, "Date of Birth updated successfully", Toast.LENGTH_SHORT).show();
+            userRef.child("name").setValue(name);
+
+            Toast.makeText(this, "Name updated successfully", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Name cannot be empty", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
